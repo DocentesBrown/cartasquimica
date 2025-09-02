@@ -8,22 +8,37 @@
 </head>
 <body>
   <h1>Juego de Cartas de Química</h1>
+  
   <div id="login">
-    <input type="text" id="nombreJugador" placeholder="Ingresa tu nombre">
-    <button onclick="crearSala()">Crear Sala</button>
-    <button onclick="unirseSala()">Unirse a Sala</button>
+    <input type="text" id="playerName" placeholder="Ingresa tu nombre">
+    <button id="joinBtn">Unirse a la partida</button>
   </div>
 
   <div id="sala" style="display:none;">
-    <h2> Sala: <span id="salaId"></span></h2>
+    <h2>Sala: <span id="salaId">partida1</span></h2>
     <p>Jugador: <span id="jugadorNombre"></span></p>
     <div id="tablero"></div>
   </div>
 
-  <!-- Firebase -->
+  <!-- Firebase (compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-  
+
+  <script>
+    // Configuración Firebase (copiado de firebase.js)
+    const firebaseConfig = {
+      apiKey: "AIzaSyDerhUButfooDxZ1lzbcA7Pa9UQ1OpACIc",
+      authDomain: "cartas-tabla-periodica-b58d4.firebaseapp.com",
+      databaseURL: "https://cartas-tabla-periodica-b58d4-default-rtdb.firebaseio.com",
+      projectId: "cartas-tabla-periodica-b58d4",
+      storageBucket: "cartas-tabla-periodica-b58d4.appspot.com",
+      messagingSenderId: "715187283197",
+      appId: "1:715187283197:web:403fce28d444ebdb018a94",
+      measurementId: "G-EEDKG1HX1V"
+    };
+    firebase.initializeApp(firebaseConfig);
+  </script>
+
   <!-- Nuestro script -->
   <script src="script.js"></script>
 </body>
