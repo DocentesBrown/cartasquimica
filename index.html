@@ -18,7 +18,15 @@
   <div id="sala" style="display:none;">
     <h2>Sala: <span id="salaId"></span></h2>
     <p>Jugador: <span id="jugadorNombre"></span></p>
-    <div id="tablero"></div>
+
+    <div id="lobby">
+      <h3>Jugadores conectados (<span id="cantJugadores">0</span>/4)</h3>
+      <ul id="listaJugadores" style="list-style:none; padding:0; margin:0;"></ul>
+      <button id="btnIniciar" disabled onclick="iniciarPartida()">Iniciar partida</button>
+      <p id="estadoLobby" style="margin-top:8px;color:#24496e;"></p>
+    </div>
+
+    <div id="tablero" style="margin-top:16px;"></div>
   </div>
 
   <!-- Firebase compat -->
@@ -32,7 +40,7 @@
       authDomain: "cartas-tabla-periodica-b58d4.firebaseapp.com",
       databaseURL: "https://cartas-tabla-periodica-b58d4-default-rtdb.firebaseio.com",
       projectId: "cartas-tabla-periodica-b58d4",
-      storageBucket: "cartas-tabla-periodica-b58d4.firebasestorage.app",
+      storageBucket: "cartas-tabla-periodica-b58d4.appspot.com",
       messagingSenderId: "715187283197",
       appId: "1:715187283197:web:403fce28d444ebdb018a94",
       measurementId: "G-EEDKG1HX1V"
@@ -40,7 +48,7 @@
     firebase.initializeApp(firebaseConfig);
   </script>
 
-  <!-- Tu lógica -->
+  <!-- Lógica del juego -->
   <script src="script.js"></script>
 </body>
 </html>
