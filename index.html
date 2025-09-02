@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Juego de Cartas de Química</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Juego de Cartas de Química</h1>
+  <div id="login">
+    <input type="text" id="nombreJugador" placeholder="Ingresa tu nombre">
+    <button onclick="crearSala()">Crear Sala</button>
+    <button onclick="unirseSala()">Unirse a Sala</button>
+  </div>
+
+  <div id="sala" style="display:none;">
+    <h2> Sala: <span id="salaId"></span></h2>
+    <p>Jugador: <span id="jugadorNombre"></span></p>
+    <div id="tablero"></div>
+  </div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+  
+  <!-- Nuestro script -->
+  <script src="script.js"></script>
+</body>
+</html>
