@@ -14,8 +14,7 @@ document.getElementById("joinBtn").addEventListener("click", () => {
     cards: []
   });
 
-  document.getElementById("status").innerText = "Te uniste como " + playerName;
+  document.getElementById("jugadorNombre").innerText = playerName;
   document.getElementById("login").style.display = "none";
+  document.getElementById("sala").style.display = "block";
 });
-
-// 👇 Más adelante: cargar elements.json y repartir cartas
