@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Juego de Cartas de Química</title>
+  <title>Juego de Cartas de Química – Cadena de Decaimiento</title>
   <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
@@ -21,25 +21,47 @@
 
     <div id="lobby">
       <h3>Jugadores conectados (<span id="cantJugadores">0</span>/4)</h3>
-      <ul id="listaJugadores" style="list-style:none; padding:0; margin:0;"></ul>
+      <ul id="listaJugadores" class="list-reset"></ul>
       <button id="btnIniciar" disabled onclick="iniciarPartida()">Iniciar partida</button>
-      <p id="estadoLobby" style="margin-top:8px;color:#24496e;"></p>
+      <p id="estadoLobby" class="info"></p>
     </div>
 
-    <div id="controlesTurno" style="margin-top:12px;">
-      <h3>Turno</h3>
-      <p id="estadoTurno">Esperando a que inicie la partida…</p>
-      <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-        <button id="btnRobar" onclick="robarCarta()" disabled>Robar carta</button>
-        <button id="btnTerminar" onclick="terminarTurno()" disabled>Terminar turno</button>
+    <div id="juego" style="display:none; margin-top:14px;">
+      <div id="marcadores" class="center info"></div>
+      <div id="estadoTurno" class="center info">Esperando…</div>
+
+      <div id="mesaActual" class="center mt">
+        <strong>Elemento actual en cadena:</strong>
+        <div id="cartaActual" class="card mt"></div>
+        <div id="pistaSiguiente" class="info"></div>
       </div>
-      <div id="pozo" style="margin-top:12px;">
-        <strong>Pozo de descarte:</strong>
-        <div id="topDiscard" class="card" style="display:inline-block; margin-top:8px;"></div>
+
+      <div id="controlesTurno" class="center mt">
+        <div class="row">
+          <button id="btnRobar" onclick="robarCarta()" disabled>Robar carta</button>
+          <button id="btnPasar" onclick="pasarTurno()" disabled>Pasar</button>
+        </div>
+      </div>
+
+      <div id="pozo" class="center mt">
+        <strong>Pozo de descarte (tope):</strong>
+        <div id="topDiscard" class="card inline mt"></div>
+      </div>
+
+      <h3 class="center mt">Tu mano</h3>
+      <div id="tablero" class="row maxw"></div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div id="modalOverlay" class="modal-overlay" onclick="cerrarModal()">
+    <div id="modalBox" class="modal" onclick="event.stopPropagation()">
+      <h3 id="modalTitulo"></h3>
+      <p id="modalMensaje"></p>
+      <div class="center mt">
+        <button onclick="cerrarModal()">OK</button>
       </div>
     </div>
-
-    <div id="tablero" style="margin-top:16px;"></div>
   </div>
 
   <!-- Firebase compat -->
