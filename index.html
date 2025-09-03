@@ -5,6 +5,61 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Juego de Cartas de Química – Cadena de Decaimiento</title>
   <link rel="stylesheet" href="style.css"/>
+
+  <!-- Overrides mínimos estilo Docentes Brown -->
+  <style>
+    :root{
+      --primary:#24496e;   /* azul Docentes Brown */
+      --bg:#f3efdc;        /* crema */
+      --violet:#6c467e;    /* violeta suave */
+      --accent:#da6863;    /* coral */
+      --text:#24496e;
+      --card-bg:#ffffff;
+      --muted:#2b2b2b;
+    }
+    body{ background:var(--bg); color:var(--text); }
+    h1,h3{ color:var(--primary); }
+    .pill{ background:var(--violet); color:#fff; padding:.25rem .5rem; border-radius:999px; margin:.125rem; display:inline-block; }
+    button{
+      border:2px solid var(--primary);
+      color:#fff; background:var(--primary);
+      padding:.6rem 1rem; border-radius:.75rem; cursor:pointer;
+    }
+    button:disabled{ opacity:.5; cursor:not-allowed; }
+    #btnRobarPozo{ background:var(--accent); border-color:var(--accent); }
+    #btnTomarUna{ background:var(--violet); border-color:var(--violet); }
+    .card{
+      background:var(--card-bg);
+      border:2px solid var(--primary);
+      border-radius:12px; padding:.75rem;
+      box-shadow:0 3px 10px rgba(36,73,110,.12);
+      text-align:left;
+    }
+    .hint{ color:var(--violet); font-weight:600; }
+    /* Modal robusto (no depende de style.css) */
+    .modal-overlay{
+      position:fixed; inset:0; display:none;
+      align-items:center; justify-content:center;
+      background:rgba(0,0,0,.45); z-index:9999;
+      padding:1rem;
+    }
+    .modal-overlay.open{ display:flex; }
+    .modal{
+      background:var(--card-bg); color:var(--text);
+      border:2px solid var(--primary);
+      border-radius:16px; padding:1rem; width:min(680px, 92vw);
+      box-shadow:0 10px 30px rgba(0,0,0,.25);
+    }
+    .modal-title{ font-size:1.1rem; font-weight:700; margin-bottom:.5rem; color:var(--primary); }
+    .modal-body{ max-height:60vh; overflow:auto; }
+    .modal-actions{ text-align:right; margin-top:.75rem; }
+    .row.center{ display:flex; gap:.5rem; align-items:center; justify-content:center; flex-wrap:wrap; }
+    .center{ text-align:center; }
+    .mt{ margin-top:.75rem; }
+    .maxw{ max-width:960px; margin:0 auto; }
+    .inline{ display:inline-block; }
+    pre{ white-space:pre-wrap; word-break:break-word; font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+  </style>
 </head>
 <body>
   <h1>Juego de Cartas de Química</h1>
@@ -42,7 +97,7 @@
         <div id="pistaSiguiente" class="hint mt"></div>
       </div>
 
-      <!-- NUEVO: visualización de la cadena que se va armando -->
+      <!-- Cadena jugada (sin anticipar el siguiente) -->
       <div id="cadenaWrap" class="center mt">
         <strong>Cadena:</strong>
         <div id="cadenaDecaimiento" class="mt"></div>
