@@ -3,87 +3,70 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Juego de Cartas de Química – Cadena de Decaimiento</title>
+  <title>Cadena de Decaimiento – Juego de Cartas</title>
   <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
-  <h1>Juego de Cartas de Química</h1>
+  <header class="app-header">
+    <h1>Cadena de Decaimiento</h1>
+    <p class="subtitle">Juego de cartas — @docentesbrown</p>
+  </header>
 
-  <div id="login">
-    <input type="text" id="nombreJugador" placeholder="Ingresa tu nombre"/>
-    <button onclick="crearSala()">Crear Sala</button>
-    <button onclick="unirseSala()">Unirse a Sala</button>
-  </div>
-
-  <div id="sala" style="display:none;">
-    <h2>Sala: <span id="salaId"></span></h2>
-    <p>Jugador: <span id="jugadorNombre"></span></p>
-
-    <div id="lobby">
-      <h3>Jugadores conectados (<span id="cantJugadores">0</span>/4)</h3>
-      <ul id="listaJugadores" class="list-reset"></ul>
-      <button id="btnIniciar" disabled onclick="iniciarPartida()">Iniciar partida</button>
-      <p id="estadoLobby" class="info"></p>
-    </div>
-
-    <div id="juego" style="display:none; margin-top:14px;">
-      <div id="marcadores" class="center info"></div>
-      <div id="estadoTurno" class="center info">Esperando…</div>
-
-      <div id="mesaActual" class="center mt">
-        <strong>Elemento actual en cadena:</strong>
-        <div id="cartaActual" class="card mt"></div>
-        <div id="pistaSiguiente" class="info"></div>
+  <main>
+    <section class="status-row">
+      <div>
+        <strong>Turno:</strong> <span id="turnoTxt">Tu turno</span>
       </div>
-
-      <div id="controlesTurno" class="center mt">
-        <div class="row">
-          <button id="btnRobar" onclick="robarCarta()" disabled>Robar carta</button>
-          <button id="btnPasar" onclick="pasarTurno()" disabled>Pasar</button>
-        </div>
+      <div>
+        <strong>Mazo:</strong> <span id="mazoCount">0</span>
+        &nbsp;|&nbsp;
+        <strong>Pozo:</strong> <span id="pozoCount">0</span>
       </div>
+    </section>
 
-      <div id="pozo" class="center mt">
-        <strong>Pozo de descarte (tope):</strong>
-        <div id="topDiscard" class="card inline mt"></div>
-      </div>
+    <section class="mesa">
+      <h2>Elemento actual</h2>
+      <div id="cartaActual" class="card placeholder">—</div>
+      <div id="pista" class="hint">Pista: —</div>
+    </section>
 
-      <h3 class="center mt">Tu mano</h3>
-      <div id="tablero" class="row maxw"></div>
-    </div>
-  </div>
+    <section class="decay">
+      <h2>Cadena armada</h2>
+      <div id="cadenaWrap" class="decay-row"></div>
+    </section>
+
+    <section class="controls">
+      <button id="btnRobar" class="primary">Robar del mazo</button>
+      <button id="btnRobarPozo" class="secondary">Robar del pozo</button>
+      <button id="btnPasar" class="ghost">Pasar</button>
+    </section>
+
+    <section class="pozo">
+      <h3>Pozo (muestra la carta superior)</h3>
+      <div id="topDiscard" class="card placeholder">—</div>
+    </section>
+
+    <section class="mano">
+      <h2>Tu mano</h2>
+      <div id="manoWrap" class="hand"></div>
+    </section>
+  </main>
 
   <!-- Modal -->
-  <div id="modalOverlay" class="modal-overlay" onclick="cerrarModal()">
+  <div id="modalOverlay" class="modal-overlay" style="display:none;" onclick="cerrarModal()">
     <div id="modalBox" class="modal" onclick="event.stopPropagation()">
-      <h3 id="modalTitulo"></h3>
-      <p id="modalMensaje"></p>
+      <h3 id="modalTitulo">Carta robada</h3>
+      <div id="modalMensaje"></div>
       <div class="center mt">
-        <button onclick="cerrarModal()">OK</button>
+        <button class="primary" onclick="cerrarModal()">OK</button>
       </div>
     </div>
   </div>
 
-  <!-- Firebase compat -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+  <footer class="app-footer">
+    <small>Hecho con ❤️ para Naty</small>
+  </footer>
 
-  <!-- Inicialización Firebase (compat) -->
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDerhUButfooDxZ1lzbcA7Pa9UQ1OpACIc",
-      authDomain: "cartas-tabla-periodica-b58d4.firebaseapp.com",
-      databaseURL: "https://cartas-tabla-periodica-b58d4-default-rtdb.firebaseio.com",
-      projectId: "cartas-tabla-periodica-b58d4",
-      storageBucket: "cartas-tabla-periodica-b58d4.appspot.com",
-      messagingSenderId: "715187283197",
-      appId: "1:715187283197:web:403fce28d444ebdb018a94",
-      measurementId: "G-EEDKG1HX1V"
-    };
-    firebase.initializeApp(firebaseConfig);
-  </script>
-
-  <!-- Lógica del juego -->
   <script src="script.js"></script>
 </body>
 </html>
