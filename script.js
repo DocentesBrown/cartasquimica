@@ -78,7 +78,16 @@ function updateMesaUI(game) {
   const nextSim = seq[idx + 1];
   if (nextSim) {
     const nextObj = findElementBySymbol(nextSim);
-    pista.textContent = `Pista: siguiente en la cadena → ${nextObj ? `${nextObj.simbolo} (${nextObj.nombre})` : nextSim}`;
+    const hintParts = [];
+if (nextObj && nextObj.electronegatividad != null) hintParts.push(`Electronegatividad ≈ ${nextObj.electronegatividad}`);
+else if (nextObj && nextObj.numero_atomico != null) hintParts.push(`Número atómico = ${nextObj.numero_atomico}`);
+else if (nextObj && nextObj.numero_masico != null) hintParts.push(`Número másico ≈ ${nextObj.numero_masico}`);
+else if (nextObj && nextObj.electrones != null) hintParts.push(`Electrones = ${nextObj.electrones}`);
+else if (nextObj && nextObj.neutrones != null) hintParts.push(`Neutrones ≈ ${nextObj.neutrones}`);
+else if (nextObj && nextObj.protones != null) hintParts.push(`Protones = ${nextObj.protones}`);
+else if (nextObj && nextObj.radio_atomico_pm != null) hintParts.push(`Radio atómico ≈ ${nextObj.radio_atomico_pm} pm`);
+else if (nextObj && nextObj.isotopos != null) hintParts.push(`Isótopos conocidos ≈ ${nextObj.isotopos}`);
+pista.textContent = hintParts.length ? `Pista: ${hintParts[0]}` : 'Pista: característica no disponible';
   } else {
     pista.textContent = "Fin de la cadena.";
   }
