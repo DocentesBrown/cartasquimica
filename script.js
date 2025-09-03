@@ -1,5 +1,6 @@
 /* Juego de Cadena de Decaimiento – actualización:
-   - Las cartas en la mano muestran todas sus características.
+   - Muestra la cadena armada: Nombres unidos con → y el siguiente en negrita.
+   - TOMAR UNA CARTA abre modal 3s con la carta tomada (ya implementado).
    - Botones:
        * ROBAR POZO: toma todo el pozo (modal 3s) y pasa el turno.
        * TOMAR UNA CARTA: roba 1 del mazo (modal 3s) y pasa el turno.
@@ -67,7 +68,34 @@ function buildDecaySequenceStartingAtU() {
   return seq.length ? seq : ["U"];
 }
 
-/* ================== UI de mesa / mano ================== */
+/* ================== UI: mesa, pista, pozo, cadena ================== */
+function updateCadenaUI(game) {
+  const box = $("cadenaDecaimiento");
+  if (!box) return;
+
+  const seq = game.decaySequence || [];
+  const idx = game.decayIndex || 0;
+
+  // Nombres jugados hasta ahora (incluye el actual en mesa)
+  const jugados = seq.slice(0, Math.min(idx + 1, seq.length))
+    .map(sym => (findElementBySymbol(sym)?.nombre) || sym);
+
+  // Siguiente (resaltado)
+  const nextSym = seq[idx + 1];
+  const nextName = nextSym ? (findElementBySymbol(nextSym)?.nombre || nextSym) : null;
+
+  let html = "";
+  if (jugados.length) {
+    html += jugados.join(" &rarr; ");
+  }
+  if (nextName) {
+    html += ` &rarr; <strong>${nextName}</strong>`;
+  }
+  if (!html) html = "(sin cadena)";
+
+  box.innerHTML = html;
+}
+
 function updateMesaUI(game) {
   const cartaDiv = $("cartaActual");
   const pista = $("pistaSiguiente");
@@ -105,17 +133,19 @@ function updateMesaUI(game) {
   // Pozo (tope)
   const top = game.discard?.length ? game.discard[game.discard.length - 1] : null;
   $("topDiscard").innerHTML = top ? renderCard(top) : "<div class='card'>(vacío)</div>";
+
+  // NUEVO: render de la cadena
+  updateCadenaUI(game);
 }
 
 function renderMano(mano, esMiTurno) {
   const cont = $("tablero");
   cont.innerHTML = "";
   mano.forEach((elObj, idx) => {
-    // Ahora se VEN las características completas en la mano
+    // Se VEN las características completas en la mano
     const wrapper = document.createElement("div");
     wrapper.className = "card mt";
     wrapper.innerHTML = renderCardHeader(elObj) + renderCardFull(elObj);
-    // clic para jugar
     wrapper.onclick = () => { if (esMiTurno) jugarCartaDesdeMano(idx); };
     if (!esMiTurno) wrapper.style.opacity = "0.9";
     cont.appendChild(wrapper);
@@ -130,8 +160,7 @@ function setTurnStateUI(core) {
 
   setDisabled("btnRobarPozo", !soyTurno);
   setDisabled("btnTomarUna", !soyTurno);
-  // Pasar sólo si ya actuó (jugó o robó)
-  setDisabled("btnPasar", !(soyTurno && acted));
+  setDisabled("btnPasar", !(soyTurno && acted)); // Pasar sólo si ya actuó
 }
 
 /* ================== Flujo de sala ================== */
@@ -211,7 +240,7 @@ function suscribirSala() {
       const playersArr = Object.entries(game.players || {}).map(([pid, p]) => ({pid, ...p}));
       $("marcadores").innerHTML = playersArr.map(p => `<span class="pill">${p.name}: ${p.points ?? 0}</span>`).join(" ");
 
-      // Mesa + pista + pozo
+      // Mesa + pista + pozo + cadena
       updateMesaUI(game);
 
       // Mano propia
@@ -258,7 +287,7 @@ async function iniciarPartida() {
   updates[`games/${gameId}/decaySequence`] = decaySequence;
   updates[`games/${gameId}/decayIndex`] = 0;
   updates[`games/${gameId}/currentTurn`] = pids[0] || null;
-  updates[`games/${gameId}/turnState`] = { acted: false }; // << clave para habilitar "Pasar"
+  updates[`games/${gameId}/turnState`] = { acted: false };
 
   await db().ref().update(updates);
 }
@@ -277,7 +306,7 @@ async function advanceTurn(core) {
 
   await db().ref().update({
     [`games/${gameId}/currentTurn`]: next,
-    [`games/${gameId}/turnState`]: { acted: false } // reset de acción
+    [`games/${gameId}/turnState`]: { acted: false }
   });
 }
 
@@ -304,6 +333,7 @@ window.tomarUnaCarta = async function tomarUnaCarta(){
     [`games/${gameId}/turnState`]: { acted: true }
   });
 
+  // Modal 3s mostrando la carta tomada
   openModal("Tomaste una carta", `${renderCardHeader(carta)}${renderCardFull(carta)}`);
   setTimeout(async () => {
     cerrarModal();
@@ -376,7 +406,7 @@ window.jugarCartaDesdeMano = async function jugarCartaDesdeMano(indexInHand){
     updates[`games/${gameId}/decayIndex`] = idx + 1;
     updates[`games/${gameId}/turnState`] = { acted: true };
     await db().ref().update(updates);
-    // No auto-pasamos: el jugador puede decidir usar "Pasar" (habilitado por acted=true)
+    // El jugador puede presionar "Pasar" (habilitado por acted=true).
   } else {
     const points = (me.points || 0) - 1;
     updates[`games/${gameId}/players/${playerId}/points`] = points;
@@ -384,7 +414,6 @@ window.jugarCartaDesdeMano = async function jugarCartaDesdeMano(indexInHand){
     updates[`games/${gameId}/discard`] = nuevoPozo;
     updates[`games/${gameId}/turnState`] = { acted: true };
     await db().ref().update(updates);
-    // También puede "Pasar" luego del error (acted=true).
   }
 };
 
