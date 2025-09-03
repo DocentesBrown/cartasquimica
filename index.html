@@ -3,69 +3,50 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Cadena de Decaimiento – Juego de Cartas</title>
+  <title>Juego de Cartas – Cadena de Decaimiento</title>
   <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
-  <header class="app-header">
-    <h1>Cadena de Decaimiento</h1>
-    <p class="subtitle">Juego de cartas — @docentesbrown</p>
-  </header>
+  <h1>Juego de Cartas – Cadena de Decaimiento</h1>
+  <div id="status" class="center info">
+    Mazo: <span id="mazoCount">0</span> | Pozo: <span id="pozoCount">0</span>
+  </div>
 
-  <main>
-    <section class="status-row">
-      <div>
-        <strong>Turno:</strong> <span id="turnoTxt">Tu turno</span>
-      </div>
-      <div>
-        <strong>Mazo:</strong> <span id="mazoCount">0</span>
-        &nbsp;|&nbsp;
-        <strong>Pozo:</strong> <span id="pozoCount">0</span>
-      </div>
-    </section>
+  <div id="mesaActual" class="center mt">
+    <strong>Elemento actual en cadena:</strong>
+    <div id="cartaActual" class="card mt">—</div>
+    <div id="pistaSiguiente" class="info">Pista: —</div>
+  </div>
 
-    <section class="mesa">
-      <h2>Elemento actual</h2>
-      <div id="cartaActual" class="card placeholder">—</div>
-      <div id="pista" class="hint">Pista: —</div>
-    </section>
+  <div id="lineaDecaimiento" class="center mt">
+    <strong>Cadena armada:</strong>
+    <div id="cadenaWrap" class="decay-row mt"></div>
+  </div>
 
-    <section class="decay">
-      <h2>Cadena armada</h2>
-      <div id="cadenaWrap" class="decay-row"></div>
-    </section>
+  <div id="controlesTurno" class="center mt">
+    <button id="btnRobar">Robar del mazo</button>
+    <button id="btnRobarPozo">Robar del pozo</button>
+    <button id="btnPasar">Pasar</button>
+  </div>
 
-    <section class="controls">
-      <button id="btnRobar" class="primary">Robar del mazo</button>
-      <button id="btnRobarPozo" class="secondary">Robar del pozo</button>
-      <button id="btnPasar" class="ghost">Pasar</button>
-    </section>
+  <div id="pozo" class="center mt">
+    <strong>Pozo (tope):</strong>
+    <div id="topDiscard" class="card inline mt">—</div>
+  </div>
 
-    <section class="pozo">
-      <h3>Pozo (muestra la carta superior)</h3>
-      <div id="topDiscard" class="card placeholder">—</div>
-    </section>
-
-    <section class="mano">
-      <h2>Tu mano</h2>
-      <div id="manoWrap" class="hand"></div>
-    </section>
-  </main>
+  <h3 class="center mt">Tu mano</h3>
+  <div id="manoWrap" class="row maxw"></div>
 
   <!-- Modal -->
-  <div id="modalOverlay" class="modal-overlay" style="display:none;" onclick="cerrarModal()">
+  <div id="modalOverlay" class="modal-overlay" onclick="cerrarModal()">
     <div id="modalBox" class="modal" onclick="event.stopPropagation()">
-      <h3 id="modalTitulo">Carta robada</h3>
+      <h3 id="modalTitulo"></h3>
       <div id="modalMensaje"></div>
       <div class="center mt">
-        <button class="primary" onclick="cerrarModal()">OK</button>
+        <button onclick="cerrarModal()">OK</button>
       </div>
     </div>
   </div>
-
-  <footer class="app-footer">
-    <small>Hecho con ❤️ para Naty</small>
-  </footer>
 
   <script src="script.js"></script>
 </body>
