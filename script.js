@@ -1,14 +1,13 @@
-/* Juego de Cadena de Decaimiento – reglas (a–e)
-   - Reparte 5 por jugador
-   - Empieza con Uranio en la mesa
-   - Solo se puede descartar la carta correcta del decaimiento
-   - Si no tiene: Robar 1 => modal 3s => pasa turno automáticamente
-   - Robar mazo completo en tu turno => modal 3s => pasa turno
-   - +2 si acierta; −1 si descarta mal (va al pozo)
-   - Pista con info aleatoria del siguiente elemento
+/* Juego de Cadena de Decaimiento – actualización:
+   - Las cartas en la mano muestran todas sus características.
+   - Botones:
+       * ROBAR POZO: toma todo el pozo (modal 3s) y pasa el turno.
+       * TOMAR UNA CARTA: roba 1 del mazo (modal 3s) y pasa el turno.
+   - Pasar se habilita sólo si el jugador realizó una acción este turno:
+       jugar carta / robar pozo / tomar una carta.
+   - Se mantiene: +2 si acierta la siguiente de la cadena; −1 si juega mal (va al pozo).
 */
 
-/* ================== Utilidades básicas ================== */
 function codigoSala(len = 5) {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let out = "";
@@ -28,60 +27,44 @@ function show(id, v) { const el = $(id); if (el) el.style.display = v ? "block" 
 function setDisabled(id, v) { const el = $(id); if (el) el.disabled = v; }
 
 /* ================== Modal ================== */
-function renderCardHeader(elObj) {
-  if (!elObj) return "";
-  return `<h3>${elObj.simbolo} — ${elObj.nombre}</h3>`;
-}
+function renderCardHeader(elObj) { return elObj ? `<h3>${elObj.simbolo} — ${elObj.nombre}</h3>` : ""; }
 function renderCardFull(elObj) {
   if (!elObj) return "<p>(sin datos)</p>";
   const lines = Object.keys(elObj).map(k => `${k}: ${elObj[k] === null ? "—" : elObj[k]}`);
   return `<pre>${lines.join("\n")}</pre>`;
 }
-function renderCard(elObj) {
-  return `<div class="card">${renderCardHeader(elObj)}${renderCardFull(elObj)}</div>`;
-}
+function renderCard(elObj) { return `<div class="card">${renderCardHeader(elObj)}${renderCardFull(elObj)}</div>`; }
 function openModal(titulo, mensaje) {
   $("modalTitle").innerHTML = titulo;
   $("modalBody").innerHTML = mensaje;
   $("modalOverlay").classList.add("open");
 }
-function cerrarModal() {
-  $("modalOverlay").classList.remove("open");
-}
+function cerrarModal() { $("modalOverlay").classList.remove("open"); }
 
-/* ================== Estado global mínimo ================== */
+/* ================== Estado global ================== */
 let gameId = null;
 let playerId = null;
 let playerName = null;
-let elements = [];            // desde elements.json
+let elements = [];
 let symbolMap = {};
-let decayMap = {};            // { "U": "Th", "Th": "Pa", ... } ejemplo (cadena esperada)
 let unsubscribe = null;
 
-/* ================== Firebase ================== */
 function db(){ return firebase.database(); }
 
-/* ================== Datos (carga elements.json) ================== */
+/* ================== Cargar elementos ================== */
 (async function cargarDatos(){
   const resp = await fetch("elements.json");
   elements = await resp.json();
   symbolMap = {};
   for (const e of elements) symbolMap[e.simbolo] = e;
 })();
-
 function findElementBySymbol(sym){ return symbolMap[sym] || null; }
 
-/* ========== Lógica de decaimiento (cadena esperada) ==========
-   NOTA: Como no podemos inferir físicamente la cadena exacta de cada isotopo a partir del JSON,
-   dejamos una cadena “didáctica” predefinida que comienza en Uranio y recorre símbolos presentes.
-   Si tu JSON ya trae un campo con “siguiente” o similar, reemplazá esta función para leer de ahí.
-*/
+/* ========== Secuencia de decaimiento didáctica (ajustable a tu set) ========== */
 function buildDecaySequenceStartingAtU() {
-  // Lista base con símbolos comunes en una cadena histórica (didáctica).
-  // Ajustá a tu set real; los símbolos deben existir en elements.json para que se puedan jugar.
   const candidates = ["U", "Th", "Pa", "Ac", "Ra", "Rn", "Po", "Pb", "Bi", "Tl", "Hg", "Au", "Pt", "Ir"];
   const seq = candidates.filter(s => !!findElementBySymbol(s));
-  return seq.length ? seq : ["U"]; // al menos U
+  return seq.length ? seq : ["U"];
 }
 
 /* ================== UI de mesa / mano ================== */
@@ -98,7 +81,6 @@ function updateMesaUI(game) {
 
   if (nextSym) {
     const nextObj = findElementBySymbol(nextSym);
-    // Pista aleatoria con atributos realmente presentes (sin inventar)
     const candidates = [
       ["Electronegatividad", "electronegatividad", v => `≈ ${v}`],
       ["Número atómico", "numero_atomico", v => `= ${v}`],
@@ -129,30 +111,32 @@ function renderMano(mano, esMiTurno) {
   const cont = $("tablero");
   cont.innerHTML = "";
   mano.forEach((elObj, idx) => {
-    const btn = document.createElement("button");
-    btn.className = "card-button";
-    btn.innerHTML = renderCardHeader(elObj); // estética: título arriba; detalles al abrir modal
-    btn.onclick = () => jugarCartaDesdeMano(idx);
-    if (!esMiTurno) btn.disabled = true;
-    cont.appendChild(btn);
+    // Ahora se VEN las características completas en la mano
+    const wrapper = document.createElement("div");
+    wrapper.className = "card mt";
+    wrapper.innerHTML = renderCardHeader(elObj) + renderCardFull(elObj);
+    // clic para jugar
+    wrapper.onclick = () => { if (esMiTurno) jugarCartaDesdeMano(idx); };
+    if (!esMiTurno) wrapper.style.opacity = "0.9";
+    cont.appendChild(wrapper);
   });
 }
 
 /* ================== Control de turnos y botones ================== */
 function setTurnStateUI(core) {
   const soyTurno = core.currentTurn === playerId;
-  const requireDrawToPass = !(core.turnState && core.turnState.drew === true);
+  const acted = !!(core.turnState && core.turnState.acted === true);
   $("turnoActual").textContent = soyTurno ? "¡Tu turno!" : `Turno de: ${core.turnName || "-"}`;
 
-  setDisabled("btnRobar", !soyTurno);
-  setDisabled("btnRobarMazo", !soyTurno);            // NUEVO (d)
-  setDisabled("btnPasar", !(soyTurno && requireDrawToPass));
+  setDisabled("btnRobarPozo", !soyTurno);
+  setDisabled("btnTomarUna", !soyTurno);
+  // Pasar sólo si ya actuó (jugó o robó)
+  setDisabled("btnPasar", !(soyTurno && acted));
 }
 
 /* ================== Flujo de sala ================== */
 async function crearSala() {
-  playerName = ($("nombreJugador").value || "Jugador").trim();
-  if (!playerName) playerName = "Jugador";
+  playerName = ($("nombreJugador").value || "Jugador").trim() || "Jugador";
   playerId = "P_" + Math.random().toString(36).slice(2, 9);
   const code = codigoSala();
   gameId = code;
@@ -175,8 +159,7 @@ async function crearSala() {
 }
 
 async function unirseSala() {
-  playerName = ($("nombreJugador").value || "Jugador").trim();
-  if (!playerName) playerName = "Jugador";
+  playerName = ($("nombreJugador").value || "Jugador").trim() || "Jugador";
   playerId = "P_" + Math.random().toString(36).slice(2, 9);
 
   const code = prompt("Ingresá el código de sala:").trim().toUpperCase();
@@ -204,7 +187,6 @@ function suscribirSala() {
     const game = s.val();
     if (!game) return;
 
-    // Lobby
     if (game.status === "lobby") {
       show("lobby", true);
       show("game", false);
@@ -221,7 +203,6 @@ function suscribirSala() {
       return;
     }
 
-    // En juego
     if (game.status === "playing") {
       show("lobby", false);
       show("game", true);
@@ -251,11 +232,9 @@ function suscribirSala() {
 }
 
 async function iniciarPartida() {
-  // Construimos mazo de TODAS las cartas (tu JSON ya trae todo)
-  const fullDeck = elements.map(e => e); // array de objetos elemento
+  const fullDeck = elements.map(e => e);
   const deckShuffled = shuffle(fullDeck);
 
-  // Repartir 5 por jugador
   const snap = await db().ref(`games/${gameId}/players`).get();
   const players = snap.val() || {};
   const pids = Object.keys(players);
@@ -269,7 +248,6 @@ async function iniciarPartida() {
     updates[`games/${gameId}/players/${pid}/points`] = 0;
   }
 
-  // Mesa inicia con URANIO
   const start = findElementBySymbol("U") || deck.find(x => x.simbolo) || null;
   const decaySequence = buildDecaySequenceStartingAtU();
 
@@ -278,9 +256,9 @@ async function iniciarPartida() {
   updates[`games/${gameId}/discard`] = [];
   updates[`games/${gameId}/mesaActual`] = start;
   updates[`games/${gameId}/decaySequence`] = decaySequence;
-  updates[`games/${gameId}/decayIndex`] = 0; // apunta al índice de la carta actual dentro de decaySequence
+  updates[`games/${gameId}/decayIndex`] = 0;
   updates[`games/${gameId}/currentTurn`] = pids[0] || null;
-  updates[`games/${gameId}/turnState`] = { drew: false };
+  updates[`games/${gameId}/turnState`] = { acted: false }; // << clave para habilitar "Pasar"
 
   await db().ref().update(updates);
 }
@@ -291,12 +269,7 @@ async function getGameCore() {
   return s.val();
 }
 
-async function setGameCore(obj) {
-  await db().ref().update(obj);
-}
-
 async function advanceTurn(core) {
-  // pasa al siguiente jugador, y resetea draw
   const snap = await db().ref(`games/${gameId}/players`).get();
   const players = Object.keys(snap.val() || {});
   const idx = Math.max(0, players.indexOf(core.currentTurn));
@@ -304,14 +277,16 @@ async function advanceTurn(core) {
 
   await db().ref().update({
     [`games/${gameId}/currentTurn`]: next,
-    [`games/${gameId}/turnState`]: { drew: false }
+    [`games/${gameId}/turnState`]: { acted: false } // reset de acción
   });
 }
 
-window.robarCarta = async function robarCarta(){
+/* === Acciones === */
+
+// TOMAR UNA CARTA (del mazo): modal 3s y pasa el turno
+window.tomarUnaCarta = async function tomarUnaCarta(){
   const core = await getGameCore();
   if (core.currentTurn !== playerId) { openModal("No es tu turno", "Esperá a que te toque."); return; }
-  if (core.turnState?.drew) { openModal("Ya robaste", "Solo podés robar 1 carta por turno."); return; }
 
   const deck = core.deckRemaining || [];
   if (!deck.length) { openModal("Mazo vacío", "No quedan cartas para robar."); return; }
@@ -326,11 +301,10 @@ window.robarCarta = async function robarCarta(){
   await db().ref().update({
     [`games/${gameId}/players/${playerId}/cards`]: nueva,
     [`games/${gameId}/deckRemaining`]: resto,
-    [`games/${gameId}/turnState`]: { drew: true },
+    [`games/${gameId}/turnState`]: { acted: true }
   });
 
-  // Mostrar 3s y pasar turno
-  openModal("Carta robada", `${renderCardHeader(carta)}${renderCardFull(carta)}`);
+  openModal("Tomaste una carta", `${renderCardHeader(carta)}${renderCardFull(carta)}`);
   setTimeout(async () => {
     cerrarModal();
     const updated = await getGameCore();
@@ -338,26 +312,25 @@ window.robarCarta = async function robarCarta(){
   }, 3000);
 };
 
-window.robarMazo = async function robarMazo(){
+// ROBAR POZO (todo el descarte): modal 3s y pasa el turno
+window.robarPozo = async function robarPozo(){
   const core = await getGameCore();
   if (core.currentTurn !== playerId) { openModal("No es tu turno", "Esperá a que te toque."); return; }
 
-  const deck = core.deckRemaining || [];
-  if (!deck.length) { openModal("Mazo vacío", "No quedan cartas."); return; }
-
-  const cant = deck.length;
+  const pozo = core.discard || [];
+  if (!pozo.length) { openModal("Pozo vacío", "No hay cartas en el pozo."); return; }
 
   const myHandSnap = await db().ref(`games/${gameId}/players/${playerId}/cards`).get();
   const hand = myHandSnap.exists() ? myHandSnap.val() : [];
-  const nueva = hand.concat(deck);
+  const nueva = hand.concat(pozo);
 
   await db().ref().update({
     [`games/${gameId}/players/${playerId}/cards`]: nueva,
-    [`games/${gameId}/deckRemaining`]: [],
-    [`games/${gameId}/turnState`]: { drew: true },
+    [`games/${gameId}/discard`]: [],
+    [`games/${gameId}/turnState`]: { acted: true }
   });
 
-  openModal("Robaste el mazo", `Te llevaste ${cant} cartas.`);
+  openModal("Robaste el pozo", `Te llevaste ${pozo.length} cartas del descarte.`);
   setTimeout(async () => {
     cerrarModal();
     const updated = await getGameCore();
@@ -368,10 +341,11 @@ window.robarMazo = async function robarMazo(){
 window.pasarTurno = async function pasarTurno(){
   const core = await getGameCore();
   if (core.currentTurn !== playerId) { openModal("No es tu turno", "Esperá a que te toque."); return; }
-  if (!core.turnState?.drew) { openModal("Primero robá", "Si no tenés la carta, debés robar 1 (o el mazo) antes de pasar."); return; }
+  if (!core.turnState?.acted) { openModal("Acción requerida", "Debés jugar una carta o robar (pozo o mazo) antes de pasar."); return; }
   await advanceTurn(core);
 };
 
+// Jugar carta desde la mano
 window.jugarCartaDesdeMano = async function jugarCartaDesdeMano(indexInHand){
   const core = await getGameCore();
   if (core.currentTurn !== playerId) { openModal("No es tu turno", "Esperá a que te toque."); return; }
@@ -382,7 +356,6 @@ window.jugarCartaDesdeMano = async function jugarCartaDesdeMano(indexInHand){
   const carta = hand[indexInHand];
   if (!carta) return;
 
-  // Comprobar si es la carta correcta de la cadena
   const seq = core.decaySequence || [];
   const idx = core.decayIndex || 0;
   const nextSym = seq[idx + 1];
@@ -392,37 +365,30 @@ window.jugarCartaDesdeMano = async function jugarCartaDesdeMano(indexInHand){
 
   const isCorrect = (nextSym && carta.simbolo === nextSym);
 
-  // Quitar de la mano la carta jugada
+  // quitar de la mano
   hand.splice(indexInHand, 1);
   updates[`games/${gameId}/players/${playerId}/cards`] = hand;
 
   if (isCorrect) {
-    // +2 puntos, avanzar mesa y decayIndex
     const points = (me.points || 0) + 2;
     updates[`games/${gameId}/players/${playerId}/points`] = points;
-
     updates[`games/${gameId}/mesaActual`] = carta;
     updates[`games/${gameId}/decayIndex`] = idx + 1;
-
+    updates[`games/${gameId}/turnState`] = { acted: true };
     await db().ref().update(updates);
-    // Turno NO avanza automáticamente al acertar (podés decidirlo). Aquí mantenemos turno para permitir cadenas rápidas,
-    // pero si preferís que pase de turno, descomentá:
-    // const core2 = await getGameCore(); await advanceTurn(core2);
+    // No auto-pasamos: el jugador puede decidir usar "Pasar" (habilitado por acted=true)
   } else {
-    // −1 punto y la carta va al pozo
     const points = (me.points || 0) - 1;
     updates[`games/${gameId}/players/${playerId}/points`] = points;
-
     nuevoPozo.push(carta);
     updates[`games/${gameId}/discard`] = nuevoPozo;
-
+    updates[`games/${gameId}/turnState`] = { acted: true };
     await db().ref().update(updates);
-    // opcional: podés forzar fin del turno tras un error:
-    // const core2 = await getGameCore(); await advanceTurn(core2);
+    // También puede "Pasar" luego del error (acted=true).
   }
 };
 
-/* ================== Helpers de inicio ================== */
+/* ================== Inicio ================== */
 window.addEventListener("load", () => {
   show("login", true);
   show("lobby", false);
