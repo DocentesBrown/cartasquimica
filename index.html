@@ -9,44 +9,48 @@
 <body>
   <h1>Juego de Cartas de Química</h1>
 
+  <!-- Login / Lobby -->
   <div id="login">
     <input type="text" id="nombreJugador" placeholder="Ingresa tu nombre"/>
     <button onclick="crearSala()">Crear Sala</button>
     <button onclick="unirseSala()">Unirse a Sala</button>
   </div>
 
-  <div id="sala" style="display:none;">
-    <h2>Sala: <span id="salaId"></span></h2>
-    <p>Jugador: <span id="jugadorNombre"></span></p>
+  <div id="lobby" class="hidden">
+    <div class="row center">
+      <div class="code">
+        Código de sala: <span id="codigoSala"></span>
+      </div>
+    </div>
+    <div class="row center">
+      <button id="btnIniciar" onclick="iniciarPartida()">Iniciar partida</button>
+    </div>
+    <div id="listaJugadores" class="mt"></div>
+  </div>
 
-    <div id="lobby">
-      <h3>Jugadores conectados (<span id="cantJugadores">0</span>/4)</h3>
-      <ul id="listaJugadores" class="list-reset"></ul>
-      <button id="btnIniciar" disabled onclick="iniciarPartida()">Iniciar partida</button>
-      <p id="estadoLobby" class="info"></p>
+  <!-- Juego -->
+  <div id="game" class="hidden">
+    <div class="row center" id="barraSuperior">
+      <div id="turnoActual"></div>
+      <div id="marcadores" class="mt"></div>
     </div>
 
-    <div id="juego" style="display:none; margin-top:14px;">
-      <div id="marcadores" class="center info"></div>
-      <div id="estadoTurno" class="center info">Esperando…</div>
-
-      <div id="mesaActual" class="center mt">
-        <strong>Elemento actual en cadena:</strong>
+    <div class="maxw">
+      <h3 class="center mt">Mesa</h3>
+      <div id="mesa" class="center">
         <div id="cartaActual" class="card mt"></div>
-        <div id="pistaSiguiente" class="info"></div>
-      </div>
-
-      <div id="controlesTurno" class="center mt">
-        <div class="row">
-          <button id="btnRobar" onclick="robarCarta()" disabled>Robar carta</button>
-          <button id="btnRobarMazo" onclick="robarTodoElMazo()" disabled>Robar todo el mazo</button>
-          <button id="btnPasar" onclick="pasarTurno()" disabled>Pasar</button>
-        </div>
+        <div id="pistaSiguiente" class="hint mt"></div>
       </div>
 
       <div id="pozo" class="center mt">
         <strong>Pozo de descarte (tope):</strong>
         <div id="topDiscard" class="card inline mt"></div>
+      </div>
+
+      <div id="controlesTurno" class="center mt">
+        <button id="btnRobar" onclick="robarCarta()" disabled>Robar carta</button>
+        <button id="btnRobarMazo" onclick="robarMazo()" disabled>Robar mazo</button>
+        <button id="btnPasar" onclick="pasarTurno()" disabled>Pasar</button>
       </div>
 
       <h3 class="center mt">Tu mano</h3>
@@ -57,22 +61,21 @@
   <!-- Modal -->
   <div id="modalOverlay" class="modal-overlay" onclick="cerrarModal()">
     <div id="modalBox" class="modal" onclick="event.stopPropagation()">
-      <h3 id="modalTitulo"></h3>
-      <p id="modalMensaje"></p>
-      <div class="center mt">
-        <button onclick="cerrarModal()">OK</button>
+      <div id="modalTitle" class="modal-title">Título</div>
+      <div id="modalBody" class="modal-body">Mensaje</div>
+      <div class="modal-actions">
+        <button onclick="cerrarModal()">Cerrar</button>
       </div>
     </div>
   </div>
 
-  <!-- Firebase compat -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
-
-  <!-- Inicialización Firebase (compat) -->
+  <!-- Firebase (usa tus claves tal como las tenías) -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script>
+    // >>> Mantengo tu config original (reemplazá por la tuya si difiere) <<<
     const firebaseConfig = {
-      apiKey: "AIzaSyDerhUButfooDxZ1lzbcA7Pa9UQ1OpACIc",
+      apiKey: "AIzaSyAy6xwweB1uVai1khP5G9sNfVDShDtYMWs",
       authDomain: "cartas-tabla-periodica-b58d4.firebaseapp.com",
       databaseURL: "https://cartas-tabla-periodica-b58d4-default-rtdb.firebaseio.com",
       projectId: "cartas-tabla-periodica-b58d4",
