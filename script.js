@@ -1,12 +1,8 @@
-/* Juego de Cadena de Decaimiento – actualización:
-   - Muestra la cadena armada: Nombres unidos con → y el siguiente en negrita.
-   - TOMAR UNA CARTA abre modal 3s con la carta tomada (ya implementado).
-   - Botones:
-       * ROBAR POZO: toma todo el pozo (modal 3s) y pasa el turno.
-       * TOMAR UNA CARTA: roba 1 del mazo (modal 3s) y pasa el turno.
-   - Pasar se habilita sólo si el jugador realizó una acción este turno:
-       jugar carta / robar pozo / tomar una carta.
-   - Se mantiene: +2 si acierta la siguiente de la cadena; −1 si juega mal (va al pozo).
+/* Juego de Cadena de Decaimiento – ajustes:
+   - Modal de "TOMAR UNA CARTA" garantizado (display:flex + z-index) y carta añadida a la mano antes de mostrar.
+   - Cadena mostrada SIN anticipar el siguiente (solo lo jugado).
+   - Estética: se mantiene la estructura; overrides en HTML (<style>) para paleta Docentes Brown.
+   - Reglas: +2 acierto; −1 error (al pozo). "Pasar" solo si ya actuó.
 */
 
 function codigoSala(len = 5) {
@@ -27,7 +23,7 @@ function $(id){ return document.getElementById(id); }
 function show(id, v) { const el = $(id); if (el) el.style.display = v ? "block" : "none"; }
 function setDisabled(id, v) { const el = $(id); if (el) el.disabled = v; }
 
-/* ================== Modal ================== */
+/* ================== Modal robusto ================== */
 function renderCardHeader(elObj) { return elObj ? `<h3>${elObj.simbolo} — ${elObj.nombre}</h3>` : ""; }
 function renderCardFull(elObj) {
   if (!elObj) return "<p>(sin datos)</p>";
@@ -35,12 +31,21 @@ function renderCardFull(elObj) {
   return `<pre>${lines.join("\n")}</pre>`;
 }
 function renderCard(elObj) { return `<div class="card">${renderCardHeader(elObj)}${renderCardFull(elObj)}</div>`; }
+
 function openModal(titulo, mensaje) {
+  const overlay = $("modalOverlay");
   $("modalTitle").innerHTML = titulo;
   $("modalBody").innerHTML = mensaje;
-  $("modalOverlay").classList.add("open");
+  // Forzamos visibilidad independientemente del CSS previo
+  overlay.classList.add("open");
+  overlay.style.display = "flex";
+  overlay.style.zIndex = "9999";
 }
-function cerrarModal() { $("modalOverlay").classList.remove("open"); }
+function cerrarModal() {
+  const overlay = $("modalOverlay");
+  overlay.classList.remove("open");
+  overlay.style.display = "none";
+}
 
 /* ================== Estado global ================== */
 let gameId = null;
@@ -61,7 +66,7 @@ function db(){ return firebase.database(); }
 })();
 function findElementBySymbol(sym){ return symbolMap[sym] || null; }
 
-/* ========== Secuencia de decaimiento didáctica (ajustable a tu set) ========== */
+/* ========== Secuencia de decaimiento didáctica ========== */
 function buildDecaySequenceStartingAtU() {
   const candidates = ["U", "Th", "Pa", "Ac", "Ra", "Rn", "Po", "Pb", "Bi", "Tl", "Hg", "Au", "Pt", "Ir"];
   const seq = candidates.filter(s => !!findElementBySymbol(s));
@@ -76,23 +81,11 @@ function updateCadenaUI(game) {
   const seq = game.decaySequence || [];
   const idx = game.decayIndex || 0;
 
-  // Nombres jugados hasta ahora (incluye el actual en mesa)
+  // Solo lo JUGADO (incluye la carta actual en mesa). No mostramos el siguiente.
   const jugados = seq.slice(0, Math.min(idx + 1, seq.length))
     .map(sym => (findElementBySymbol(sym)?.nombre) || sym);
 
-  // Siguiente (resaltado)
-  const nextSym = seq[idx + 1];
-  const nextName = nextSym ? (findElementBySymbol(nextSym)?.nombre || nextSym) : null;
-
-  let html = "";
-  if (jugados.length) {
-    html += jugados.join(" &rarr; ");
-  }
-  if (nextName) {
-    html += ` &rarr; <strong>${nextName}</strong>`;
-  }
-  if (!html) html = "(sin cadena)";
-
+  const html = jugados.length ? jugados.join(" &rarr; ") : "(sin cadena)";
   box.innerHTML = html;
 }
 
@@ -134,7 +127,7 @@ function updateMesaUI(game) {
   const top = game.discard?.length ? game.discard[game.discard.length - 1] : null;
   $("topDiscard").innerHTML = top ? renderCard(top) : "<div class='card'>(vacío)</div>";
 
-  // NUEVO: render de la cadena
+  // Cadena (solo jugados)
   updateCadenaUI(game);
 }
 
@@ -142,7 +135,6 @@ function renderMano(mano, esMiTurno) {
   const cont = $("tablero");
   cont.innerHTML = "";
   mano.forEach((elObj, idx) => {
-    // Se VEN las características completas en la mano
     const wrapper = document.createElement("div");
     wrapper.className = "card mt";
     wrapper.innerHTML = renderCardHeader(elObj) + renderCardFull(elObj);
@@ -160,7 +152,7 @@ function setTurnStateUI(core) {
 
   setDisabled("btnRobarPozo", !soyTurno);
   setDisabled("btnTomarUna", !soyTurno);
-  setDisabled("btnPasar", !(soyTurno && acted)); // Pasar sólo si ya actuó
+  setDisabled("btnPasar", !(soyTurno && acted));
 }
 
 /* ================== Flujo de sala ================== */
@@ -312,7 +304,7 @@ async function advanceTurn(core) {
 
 /* === Acciones === */
 
-// TOMAR UNA CARTA (del mazo): modal 3s y pasa el turno
+// TOMAR UNA CARTA (del mazo): añade a la mano, muestra modal 3s y pasa
 window.tomarUnaCarta = async function tomarUnaCarta(){
   const core = await getGameCore();
   if (core.currentTurn !== playerId) { openModal("No es tu turno", "Esperá a que te toque."); return; }
@@ -323,6 +315,7 @@ window.tomarUnaCarta = async function tomarUnaCarta(){
   const carta = deck[0];
   const resto = deck.slice(1);
 
+  // 1) Añadir PRIMERO a la mano en BD
   const myHandSnap = await db().ref(`games/${gameId}/players/${playerId}/cards`).get();
   const hand = myHandSnap.exists() ? myHandSnap.val() : [];
   const nueva = hand.concat([carta]);
@@ -333,7 +326,7 @@ window.tomarUnaCarta = async function tomarUnaCarta(){
     [`games/${gameId}/turnState`]: { acted: true }
   });
 
-  // Modal 3s mostrando la carta tomada
+  // 2) Mostrar modal 3s (garantizado) con la carta tomada
   openModal("Tomaste una carta", `${renderCardHeader(carta)}${renderCardFull(carta)}`);
   setTimeout(async () => {
     cerrarModal();
@@ -375,7 +368,7 @@ window.pasarTurno = async function pasarTurno(){
   await advanceTurn(core);
 };
 
-// Jugar carta desde la mano
+// Jugar carta desde la mano (+2 si correcta; −1 y al pozo si no)
 window.jugarCartaDesdeMano = async function jugarCartaDesdeMano(indexInHand){
   const core = await getGameCore();
   if (core.currentTurn !== playerId) { openModal("No es tu turno", "Esperá a que te toque."); return; }
@@ -406,7 +399,6 @@ window.jugarCartaDesdeMano = async function jugarCartaDesdeMano(indexInHand){
     updates[`games/${gameId}/decayIndex`] = idx + 1;
     updates[`games/${gameId}/turnState`] = { acted: true };
     await db().ref().update(updates);
-    // El jugador puede presionar "Pasar" (habilitado por acted=true).
   } else {
     const points = (me.points || 0) - 1;
     updates[`games/${gameId}/players/${playerId}/points`] = points;
