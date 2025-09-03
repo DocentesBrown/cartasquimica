@@ -5,45 +5,49 @@ body {
   margin: 0;
   padding: 20px;
 }
-h1 { color: #24496e; margin-top: 0; }
-#manoWrap.row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+h1 { color: #24496e; }
+#tablero.row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
 .row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
 .card {
   border: 2px solid #24496e;
   border-radius: 10px;
   background: #fff;
-  width: 220px;
+  width: 260px;
   margin: 10px;
   padding: 10px;
   box-shadow: 2px 2px 8px rgba(0,0,0,0.2);
   text-align: left;
 }
-.card header { font-weight: bold; text-align: center; margin-bottom: 6px; }
-.card .kv { font-size: 13px; line-height: 1.25; }
+.card h3 { margin: 0 0 6px 0; text-align: center; }
+.card pre { white-space: pre-wrap; margin: 0; font-size: 13px; }
 .center { text-align: center; }
 .inline { display: inline-block; }
 .info { color: #24496e; margin: 6px 0; }
+.list-reset { list-style: none; padding: 0; margin: 0; }
 .mt { margin-top: 10px; }
 .maxw { margin:10px auto; max-width:1100px; }
-.decay-row { display:flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
-
-/* Buttons */
-button{
-  background:#24496e; color:#fff; border:1px solid #24496e;
-  padding:10px 14px; border-radius:10px; font-weight:600; cursor:pointer;
-}
-button+button{ margin-left:8px }
-button:disabled{ opacity:.6; cursor:not-allowed }
 
 /* Modal */
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.45);
-  display: none; align-items: center; justify-content: center;
+  display: none; align-items: center; justify-content: center; z-index: 9999;
 }
 .modal {
-  width: min(92vw, 420px);
-  background: #fff;
-  border-radius: 14px;
-  padding: 16px;
-  border: 2px solid #24496e;
+  background: #fff; max-width: 420px; padding: 18px; border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.25); text-align: left;
 }
+
+
+/* --- Progreso de cadena y tamaños --- */
+.fila-cadena { 
+  display: flex; 
+  gap: 8px; 
+  justify-content: center; 
+  flex-wrap: nowrap; 
+  overflow-x: auto; 
+  padding: 6px 0;
+}
+.card.small { width: 180px; }
+
+/* Carta dentro del modal */
+.modal .card { width: 100%; box-sizing: border-box; }
