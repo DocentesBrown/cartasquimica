@@ -36,18 +36,3 @@ h1 { color: #24496e; }
   background: #fff; max-width: 420px; padding: 18px; border-radius: 12px;
   box-shadow: 0 10px 30px rgba(0,0,0,.25); text-align: left;
 }
-
-
-/* --- Progreso de cadena y tamaños --- */
-.fila-cadena { 
-  display: flex; 
-  gap: 8px; 
-  justify-content: center; 
-  flex-wrap: nowrap; 
-  overflow-x: auto; 
-  padding: 6px 0;
-}
-.card.small { width: 180px; }
-
-/* Carta dentro del modal */
-.modal .card { width: 100%; box-sizing: border-box; }

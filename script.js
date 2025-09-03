@@ -30,10 +30,9 @@ function renderCardHeader(elObj) {
 function renderCard(elObj) {
   return `<div class="card">${renderCardHeader(elObj)}${renderCardFull(elObj)}</div>`;
 }
-function openModal(titulo, mensajeHTML) {
+function openModal(titulo, mensaje) {
   document.getElementById("modalTitulo").textContent = titulo;
-  const msg = document.getElementById("modalMensaje");
-  msg.innerHTML = mensajeHTML;
+  document.getElementById("modalMensaje").textContent = mensaje;
   document.getElementById("modalOverlay").style.display = "flex";
 }
 window.cerrarModal = function cerrarModal() {
@@ -67,70 +66,42 @@ function updateScoresUI(scores = {}, players = {}) {
   });
   marc.textContent = rows.length ? "Puntajes — " + rows.join(" · ") : "";
 }
-
 function updateMesaUI(game) {
   const cartaDiv = document.getElementById("cartaActual");
   const pista = document.getElementById("pistaSiguiente");
-  const cadenaDiv = document.getElementById("cadenaProgreso");
 
   const current = game.mesaActual || null;
   cartaDiv.innerHTML = current ? renderCard(current) : "<p>(sin carta actual)</p>";
 
-  // Render progreso (todas las correctas jugadas)
-  const chain = game.chainPlaced || [];
-  if (cadenaDiv) {
-    cadenaDiv.innerHTML = "";
-    chain.forEach(el => {
-      const d = document.createElement("div");
-      d.className = "card small";
-      d.innerHTML = `${renderCardHeader(el)}${renderCardFull(el)}`;
-      cadenaDiv.appendChild(d);
-    });
-  }
-
-  // Pista aleatoria
   const seq = game.decaySequence || [];
   const idx = game.decayIndex || 0;
   const nextSim = seq[idx + 1];
   if (nextSim) {
     const nextObj = findElementBySymbol(nextSim);
-    if (nextObj) {
-      const opciones = [
-        nextObj.electronegatividad != null ? `Electronegatividad ≈ ${nextObj.electronegatividad}` : null,
-        nextObj.numero_atomico != null ? `Número atómico = ${nextObj.numero_atomico}` : null,
-        nextObj.numero_masico != null ? `Número másico ≈ ${nextObj.numero_masico}` : null,
-        nextObj.electrones != null ? `Electrones = ${nextObj.electrones}` : null,
-        nextObj.neutrones != null ? `Neutrones ≈ ${nextObj.neutrones}` : null,
-        nextObj.protones != null ? `Protones = ${nextObj.protones}` : null,
-        nextObj.radio_atomico_pm != null ? `Radio atómico ≈ ${nextObj.radio_atomico_pm} pm` : null,
-        nextObj.isotopos != null ? `Isótopos conocidos ≈ ${nextObj.isotopos}` : null,
-      ].filter(Boolean);
-      const hint = opciones.length ? opciones[Math.floor(Math.random()*opciones.length)] : "característica no disponible";
-      pista.textContent = `Pista: ${hint}`;
-    } else {
-      pista.textContent = "Pista: (datos no cargados)";
-    }
+    const hintParts = [];
+if (nextObj && nextObj.electronegatividad != null) hintParts.push(`Electronegatividad ≈ ${nextObj.electronegatividad}`);
+else if (nextObj && nextObj.numero_atomico != null) hintParts.push(`Número atómico = ${nextObj.numero_atomico}`);
+else if (nextObj && nextObj.numero_masico != null) hintParts.push(`Número másico ≈ ${nextObj.numero_masico}`);
+else if (nextObj && nextObj.electrones != null) hintParts.push(`Electrones = ${nextObj.electrones}`);
+else if (nextObj && nextObj.neutrones != null) hintParts.push(`Neutrones ≈ ${nextObj.neutrones}`);
+else if (nextObj && nextObj.protones != null) hintParts.push(`Protones = ${nextObj.protones}`);
+else if (nextObj && nextObj.radio_atomico_pm != null) hintParts.push(`Radio atómico ≈ ${nextObj.radio_atomico_pm} pm`);
+else if (nextObj && nextObj.isotopos != null) hintParts.push(`Isótopos conocidos ≈ ${nextObj.isotopos}`);
+pista.textContent = hintParts.length ? `Pista: ${hintParts[0]}` : 'Pista: característica no disponible';
   } else {
     pista.textContent = "Fin de la cadena.";
   }
 }
-}
-
 function setTurnStateUI(soyTurno, requireDrawToPass, players, currentId) {
   const el = document.getElementById("estadoTurno");
   if (!currentId) {
     el.textContent = "Esperando…";
   } else if (soyTurno) {
-    el.textContent = "¡Es tu turno! Jugá la siguiente carta correcta. Si no la tenés, robá 1 (del mazo o del pozo) y luego podés pasar.";
+    el.textContent = "¡Es tu turno! Jugá la siguiente carta correcta. Si no la tenés, robá 1 y luego podés pasar.";
   } else {
     const name = (players && players[currentId] && players[currentId].name) ? players[currentId].name : "otro jugador";
     el.textContent = `Turno de ${name}…`;
   }
-  setDisabled("btnRobar", !soyTurno);
-  setDisabled("btnPasar", !(soyTurno && requireDrawToPass));
-  const canRobarPozo = soyTurno && !requireDrawToPass;
-  setDisabled("btnRobarPozo", !canRobarPozo);
-}
   setDisabled("btnRobar", !soyTurno);
   setDisabled("btnPasar", !(soyTurno && requireDrawToPass));
 }
@@ -379,7 +350,6 @@ async function setTurnOrderAndStart(players){
   await db().ref(`games/${gameId}/decaySequence`).set(sequence);
   await db().ref(`games/${gameId}/decayIndex`).set(0);
   await db().ref(`games/${gameId}/mesaActual`).set(mesa);
-  await db().ref(`games/${gameId}/chainPlaced`).set([mesa]);
 
   await db().ref(`games/${gameId}/state`).set("started");
   const gameSnap = await db().ref(`games/${gameId}`).get();
@@ -434,7 +404,6 @@ async function advanceTurn(core){
     [`games/${gameId}/turnState`]:{drew:false},
   });
 }
-
 async function jugarCartaDesdeMano(indexEnMano){
   const core = await getGameCore();
   if (core.currentTurn !== playerId) { openModal("No es tu turno", "Esperá a que te toque para jugar una carta."); return; }
@@ -453,34 +422,27 @@ async function jugarCartaDesdeMano(indexEnMano){
   if (expectedSym) { correct = (carta.simbolo === expectedSym); }
   else { openModal("Cadena completa", "Ya se alcanzó el final de la cadena."); return; }
 
+  const pileSnap = await db().ref(`games/${gameId}/discardPile`).get();
+  const pile = pileSnap.exists()?pileSnap.val():[]; pile.push(carta);
+
   const updates = {};
   updates[`games/${gameId}/players/${playerId}/cards`] = nuevaMano;
+  updates[`games/${gameId}/discardPile`] = pile;
 
   const scores = core.scores || {};
   const curScore = scores[playerId] || 0;
-
   if (correct) {
     scores[playerId] = curScore + 2;
+    const newIdx = idx + 1;
+    const mesa = carta;
     updates[`games/${gameId}/scores`] = scores;
-    updates[`games/${gameId}/decayIndex`] = idx + 1;
-    updates[`games/${gameId}/mesaActual`] = carta;
-
-    const chainSnap = await db().ref(`games/${gameId}/chainPlaced`).get();
-    const chain = chainSnap.exists() ? chainSnap.val() : [];
-    chain.push(carta);
-    updates[`games/${gameId}/chainPlaced`] = chain;
-
+    updates[`games/${gameId}/decayIndex`] = newIdx;
+    updates[`games/${gameId}/mesaActual`] = mesa;
     await db().ref().update(updates);
     openModal("¡Correcto!", `Jugaste ${carta.simbolo} (${carta.nombre}) y avanzaste en la cadena. +2 puntos.`);
   } else {
-    const pileSnap = await db().ref(`games/${gameId}/discardPile`).get();
-    const pile = pileSnap.exists()?pileSnap.val():[];
-    pile.push(carta);
     scores[playerId] = curScore - 1;
-
     updates[`games/${gameId}/scores`] = scores;
-    updates[`games/${gameId}/discardPile`] = pile;
-
     await db().ref().update(updates);
     openModal("Incorrecto", `Esa carta no sigue en la cadena. -1 punto.`);
   }
@@ -489,7 +451,6 @@ async function jugarCartaDesdeMano(indexEnMano){
   cerrarModal();
   await advanceTurn(afterCore);
 }
-
 window.robarCarta = async function robarCarta(){
   const core = await getGameCore();
   if (core.currentTurn !== playerId) { openModal("No es tu turno", "Esperá a que te toque."); return; }
@@ -513,43 +474,3 @@ window.pasarTurno = async function pasarTurno(){
   if (!core.turnState?.drew) { openModal("Primero robá", "Si no tenés la carta, debés robar 1 antes de pasar."); return; }
   await advanceTurn(core);
 };
-
-
-window.robarDelPozo = async function robarDelPozo(){
-  const core = await getGameCore();
-  if (core.currentTurn !== playerId) { openModal("No es tu turno", "Esperá a que te toque."); return; }
-  if (core.turnState?.drew) { openModal("Ya robaste", "Solo podés robar 1 carta por turno."); return; }
-
-  const pileSnap = await db().ref(`games/${gameId}/discardPile`).get();
-  const pile = pileSnap.exists()? pileSnap.val(): [];
-  if (!pile.length) { openModal("Pozo vacío", "No hay cartas para robar del pozo."); return; }
-
-  const carta = pile[pile.length - 1];
-  const nuevoPozo = pile.slice(0, -1);
-
-  const myHandSnap=await db().ref(`games/${gameId}/players/${playerId}/cards`).get();
-  const hand=myHandSnap.exists()?myHandSnap.val():[]; 
-  hand.push(carta);
-
-  await db().ref().update({
-    [`games/${gameId}/players/${playerId}/cards`]: hand,
-    [`games/${gameId}/discardPile`]: nuevoPozo,
-    [`games/${gameId}/turnState`]: { drew: true },
-  });
-
-  openModal("Robaste del pozo", renderCard(carta));
-};
-
-// Hacer clic en el tope del pozo para robar
-(function(){
-  const obs = new MutationObserver(() => {
-    const topEl = document.getElementById("topDiscard");
-    if (topEl && !topEl._robarSet) {
-      topEl.style.cursor = "pointer";
-      topEl.title = "Click para robar del pozo (si es tu turno y no robaste)";
-      topEl.onclick = () => robarDelPozo();
-      topEl._robarSet = true;
-    }
-  });
-  obs.observe(document.body, { childList: true, subtree: true });
-})();
